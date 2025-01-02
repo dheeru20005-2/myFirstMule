@@ -1,0 +1,15 @@
+{
+  "sampleData": {
+    "59015fb8-97b5-431b-b367-813a1394c520": {
+      "payload": "sample_data/json.json"
+    },
+    "848ef086-db18-408a-84ca-8b4b1a31730f": {},
+    "25acab35-a1f9-4c3d-86c4-675cb1f94e41": {
+      "payload": "sample_data/products_2.xml"
+    },
+    "6672e06a-cc55-42a4-b34e-f9f07dce8c3c": {},
+    "bd452ca4-b3b0-42e3-85a4-1bb8525a6d75": {
+      "payload": "sample_data/products_1.xml"
+    }
+  }
+}
