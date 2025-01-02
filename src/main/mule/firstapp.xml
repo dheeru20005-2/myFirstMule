@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:restaurants-sapi="http://www.mulesoft.org/schema/mule/restaurants-sapi" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/restaurants-sapi http://www.mulesoft.org/schema/mule/restaurants-sapi/current/mule-restaurants-sapi.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="aa6cd3ff-4b43-4eb6-b2fc-9ec743f3133b" basePath="/api" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="firstappFlow" doc:id="a430551f-d9cb-40b9-ba74-10b91c932abe" >
+		<http:listener doc:name="Listener" doc:id="0a50b633-9a80-4464-a7c0-253a4d9a970d" config-ref="HTTP_Listener_config" path="/test"/>
+		<logger level="INFO" doc:name="Logger" doc:id="c48eb131-0d25-424a-91ca-1a881ebce964" message="#[payload]"/>
+		<choice doc:name="Choice" doc:id="d1880d39-a439-47f4-8dee-7817df49650c" >
+			<when expression="#[attributes.headers.test=='1']">
+				<logger level="INFO" doc:name="Logger" doc:id="eac4ed21-76b7-4401-8d5d-54cfd191614f" message="Received" />
+				<ee:transform doc:name="Transform Message" doc:id="59015fb8-97b5-431b-b367-813a1394c520">
+					<ee:message>
+						<ee:set-payload resource="productxml.dwl" />
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable resource="pname.dwl" variableName="pname" />
+						<ee:set-variable resource="price.dwl" variableName="price" />
+					</ee:variables>
+				</ee:transform>
+				<ee:transform doc:name="Transform Message" doc:id="faa81b66-c4e0-4441-bce7-d1c47ff0643d">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+var numbers=[44,1,2,4,5,6,7,8,22,33]
+
+fun critirea(item, index) = (mod (item,2)== 1)
+
+var words=["hi", "Dheeraj", "test","Mulesoft"]
+---
+//filter(numbers, critirea)
+//second way of calling filter(numbers, (item,index) -> (mod (item,2)==0)) 
+// third way of calling numbers filter(item,index) -> (mod(item,2)!=1)
+
+//recommneded with syntax- orderBy(words, (item,index)-> sizeOf(item))
+//recommneded with syntax - orderBy(words, (item,index)-> -sizeOf(item))
+//recommneded with syntax  - numbers orderBy(item,index)-> item
+//same as above but not recommneded without syntax - numbers orderBy $
+// not recommneded - numbers orderBy $$
+// chaning of functions  - 
+   //filter(numbers, (item,index) -> (mod (item,2)==0)) orderBy (item,index)-> item
+   
+  numbers]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="220dc228-42e7-4d47-9cdb-6dbe65185b92" message="#[vars.pname]"/>
+			</when>
+			<when expression="#[attributes.headers.test=='2']">
+				<ee:transform doc:name="Transform Message" doc:id="d83374b8-b5d4-4cdf-97a1-4c7e5a9a0425">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/dw
+
+var obj1 = {
+	one: 1,
+	two: "25",
+	test: 'y'
+}
+
+var obj2 = {
+	one: 3,
+	two1: "2",
+	two: "29",
+	y:10
+}
+
+var numbers = [1,'abc','33',56]
+
+var objArray= [obj1,obj2]
+
+---
+
+[
+test: numbers + 55 + "Dheeraj" + [2,3,45,5],
+
+test1: numbers ++ [55,45],
+
+testobj: obj1 ++ obj2,
+
+minus: (obj1 ++ obj2) - "one" - "two",
+
+minus2: (obj1 ++ obj2) -- ("one":1) - "two",
+
+//mutiple key value pairs to be removed
+minus3: (obj1 ++ obj2) -- {"one":1, two:"29"}
+]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<ee:transform doc:name="Transform Message" doc:id="c72f8304-817f-4890-9eb9-9076f245e3ff" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/dw
+var productsXml= readUrl("classpath://examples/products.xml","application/xml")
+var products= productsXml.products.*product
+---
+//productsXml
+//filtering an array shown below
+products[?($.brandName=='HP')]]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<when expression="#[attributes.headers.test=='3']">
+				<ee:transform doc:name="Transform Message" doc:id="25acab35-a1f9-4c3d-86c4-675cb1f94e41" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0output application/dwfun getImages(images:Array)={		(		images map (item)->		img:item	)}var products=(payload.products.*product  map (item,index)-> product: {											pid: item.@productId,											brandName:item.brandName,											name: item.name,											price: item.originalPrice,											(images: getImages(item.images.*image as Array)) if item.images?																					}) as Array 
+---payload//products groupBy ()-> $.product.brandName//products filter (item,index)-> item.product.brandName == 'Apple'//products distinctBy (item,index)-> item.product.pid//maxBy (products, (item)-> item.prodcut.price)//minBy (products, (item)-> item.prodcut.price)//products minBy (item)-> item.prodcut.price//orderBy (item,index)-> -item.prodcut.price]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<ee:transform doc:name="Transform Message" doc:id="6672e06a-cc55-42a4-b34e-f9f07dce8c3c" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+var product={
+			  brandName: "HP",
+			  description: "Hp Laptop",
+			  images: {
+			    image: "image1.jpeg",
+			    image: "image2.jpeg",
+			    image: "image3.jpeg"
+			  },
+			  name: "Hp Pavilion laptop",
+			  offer: {
+			    offerPrice: 1000.0,
+			    offerValidUntil: "2016-06-29" as Date
+			  },
+			  originalPrice: 1000.0
+			}
+fun convertKeysToUpper(obj)=
+			if(typeOf(obj) == Object)
+			  obj mapObject(V,K,I) -> (upper(K) ): convertKeysToUpper(V)
+			  else if(typeOf(obj) == String)
+			  upper(obj)
+			  else if(typeOf(obj) == Date)
+			  obj as String {format: "dd-MMM"}
+			  else if(typeOf(obj) == Number)
+			  obj as String {format: "#,###"}
+			  
+			  else
+			  obj
+
+---
+convertKeysToUpper(product)]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<when expression="#[attributes.headers.test=='4']">
+				<ee:transform doc:name="Transform Message" doc:id="a0e0ad5e-6805-4672-a69b-1e78b358f396">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/dw
+import dw::core::Arrays
+var productsXml= readUrl("classpath://examples/products.xml","application/xml")
+var products= productsXml.products.*product
+---
+//productsXml
+//products Arrays::some($.originalPrice<5000)
+products Arrays::every($.originalPrice<=5000)]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<when >
+				<ee:transform doc:name="Transform Message" doc:id="4caabaa4-e628-4afd-9c40-94a6fccfad5f" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/dw
+var productsXml= readUrl("classpath://examples/products.xml","application/xml")
+var products= productsXml.products.*product
+---
+products reduce(product,acc=[]) -> acc + product]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="70255099-3be1-4425-b92d-70fe2ccb5262">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/dw
+var numbers= 1 to 5
+var nestedArray=[[1],[2,3],["hello"]]
+var objArray=[
+					{one:1},
+					{two:2, three:3}
+				]
+var stringArray=["one","two","three","four"]
+//as it is anonymous i can write as below
+fun myReduceLogic(element,acc)= acc + element
+---
+//reduce(numbers,(element,acc)-> acc * element)
+
+//numbers reduce(element,acc="AA")-> acc ++ element
+
+//numbers reduce(element,acc=2)-> acc * element
+
+//numbers reduce(element,acc)->  element ++ acc
+
+//numbers reduce(element,acc=[])->  acc +  element
+
+//nestedArray reduce(element,acc=[])->  acc ++  element
+
+// above same as faltten array flatten(nestedArray)
+
+//jArray reduce(element,acc={})-> acc ++ element
+
+       /* same as above
+		{
+			(objArray)
+		} */ 
+
+// stringArray reduce(element,acc)-> acc + element
+
+ stringArray reduce(element,acc=0)-> acc + (if(sizeOf(element) > 3) 1 else 0)]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>
